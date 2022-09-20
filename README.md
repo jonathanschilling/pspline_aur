@@ -1,2 +1,2 @@
 # pspline_aur
-Arch Linux PKGBUILD for Princeton NTCC PSPLINE library
+This is an Arch Linux PKGBUILD script for the Princeton University [NTCC PSPLINE library](https://w3.pppl.gov/ntcc/PSPLINE/).
