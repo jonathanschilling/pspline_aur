@@ -1,0 +1,215 @@
+diff -Naur pspline_/portlib/cclean_dir.c pspline_compiles_on_Arch/portlib/cclean_dir.c
+--- pspline_/portlib/cclean_dir.c	2019-11-04 16:31:45.000000000 +0100
++++ pspline_compiles_on_Arch/portlib/cclean_dir.c	2022-09-20 13:28:51.357097345 +0200
+@@ -11,6 +11,9 @@
+  
+ #define FPSIZE 200
+ 
++// defined in cdelete.c
++extern int F77NAME(cdelete)(char *fpath);
++
+ int F77NAME(cclean_dir)(cpath)
+ 
+      const char *cpath;
+diff -Naur pspline_/portlib/c_execsystem.c pspline_compiles_on_Arch/portlib/c_execsystem.c
+--- pspline_/portlib/c_execsystem.c	2019-11-04 16:31:45.000000000 +0100
++++ pspline_compiles_on_Arch/portlib/c_execsystem.c	2022-09-20 13:20:07.779648708 +0200
+@@ -7,6 +7,7 @@
+ #include <stdio.h>
+ #include <sys/wait.h>
+ #include <fcntl.h>
++#include <ctype.h>
+ 
+ #ifndef __OSX
+ extern char **environ ;
+diff -Naur pspline_/portlib/cmkdir.c pspline_compiles_on_Arch/portlib/cmkdir.c
+--- pspline_/portlib/cmkdir.c	2019-11-04 16:31:46.000000000 +0100
++++ pspline_compiles_on_Arch/portlib/cmkdir.c	2022-09-20 13:30:29.906625761 +0200
+@@ -1,5 +1,6 @@
+ #include <errno.h>
+-#include <stdio.h> 
++#include <string.h>
++#include <stdio.h>
+ #include <sys/types.h> 
+ #include <sys/stat.h> 
+ #include "fpreproc/f77name.h"
+diff -Naur pspline_/portlib/cpclock.c pspline_compiles_on_Arch/portlib/cpclock.c
+--- pspline_/portlib/cpclock.c	2019-11-04 16:31:46.000000000 +0100
++++ pspline_compiles_on_Arch/portlib/cpclock.c	2022-09-20 13:20:42.169477685 +0200
+@@ -2,6 +2,7 @@
+ /*   cpu clock -- not for all systems */
+  
+ #include <stdio.h>
++#include <time.h>
+  
+ /* function names link differently depending on OS */
+  
+diff -Naur pspline_/portlib/cwc_delete.c pspline_compiles_on_Arch/portlib/cwc_delete.c
+--- pspline_/portlib/cwc_delete.c	2019-11-04 16:31:46.000000000 +0100
++++ pspline_compiles_on_Arch/portlib/cwc_delete.c	2022-09-20 13:31:31.315845703 +0200
+@@ -11,6 +11,9 @@
+  
+ #define FPSIZE 200
+ 
++// defined in cdelete.c
++extern int F77NAME(cdelete)(char *fpath);
++
+ int F77NAME(cwc_delete)(cpath,cprefix,csuffix)
+ 
+      const char *cpath;     /* directory path */
+diff -Naur pspline_/portlib/fsystem.c pspline_compiles_on_Arch/portlib/fsystem.c
+--- pspline_/portlib/fsystem.c	2019-11-04 16:31:46.000000000 +0100
++++ pspline_compiles_on_Arch/portlib/fsystem.c	2022-09-20 13:36:19.502754163 +0200
+@@ -5,6 +5,9 @@
+ /* fortran access to C (unix) library "system" call */
+ /* fortran must pass a null terminated byte string  */
+ 
++// defined in get_proc_mem.c
++extern void F77NAME(get_proc_mem)(float *v_mem, float *r_mem);
++
+ /* 02/09/2011 CLF: check errno                      */ 
+ int F77NAME(fsystem)(const char* cmd)
+ {
+@@ -26,7 +29,7 @@
+      if ( errsv != 0 ) {
+        perror("fsystem->perror:");
+ #ifndef __SUN  
+-       get_proc_mem(&vm,&rm);
++       F77NAME(get_proc_mem)(&vm,&rm);
+ 
+        printf(" --> fsystem: vmem = %g rmem = %g\n",vm,rm);
+        printf("%s\n",cmd);
+diff -Naur pspline_/portlib/fsystem_mem.c pspline_compiles_on_Arch/portlib/fsystem_mem.c
+--- pspline_/portlib/fsystem_mem.c	2019-11-04 16:31:46.000000000 +0100
++++ pspline_compiles_on_Arch/portlib/fsystem_mem.c	2022-09-20 13:37:54.291892127 +0200
+@@ -5,13 +5,16 @@
+ /* fortran access to C (unix) library "system" call */
+ /* fortran must pass a null terminated byte string  */
+ 
++// defined in get_proc_mem.c
++extern void F77NAME(get_proc_mem)(float *v_mem, float *r_mem);
++
+ /* 02/09/2011 CLF: check errno                      */ 
+ int F77NAME(fsystem_mem)()
+ {
+   float vm;
+   float rm;
+ 
+-  get_proc_mem(&vm,&rm);
++  F77NAME(get_proc_mem)(&vm,&rm);
+   printf(" --> fsystem: vmem = %g rmem = %g\n",vm,rm);
+   printf("              used memory by system()\n");
+ 
+diff -Naur pspline_/portlib/get_proc_mem.c pspline_compiles_on_Arch/portlib/get_proc_mem.c
+--- pspline_/portlib/get_proc_mem.c	2019-11-04 16:31:46.000000000 +0100
++++ pspline_compiles_on_Arch/portlib/get_proc_mem.c	2022-09-20 13:36:48.792481222 +0200
+@@ -34,13 +34,14 @@
+ #include <unistd.h>
+ /* #include <asm/page.h>  */    /* for PAGE_SHIFT and PAGE_SIZE (in bytes) */
+ #include <sys/param.h>          /* for HZ (number of clock cycles per sec)*/
++#include "fpreproc/f77name.h"
+ 
+ static pid_t pid;
+ static char  stat_file[128];
+ static int   pidnotknown=1;  /* pidnotknown=1 is true, used
+                                 to get the PID only once */
+ 
+-void get_proc_mem_(float *v_mem, float *r_mem)
++void F77NAME(get_proc_mem)(float *v_mem, float *r_mem)
+ {
+    char state[8], comm[80];
+    unsigned long i;
+diff -Naur pspline_/portlib/linux_chdir.c pspline_compiles_on_Arch/portlib/linux_chdir.c
+--- pspline_/portlib/linux_chdir.c	2019-11-04 16:31:47.000000000 +0100
++++ pspline_compiles_on_Arch/portlib/linux_chdir.c	2022-09-20 13:39:00.201326082 +0200
+@@ -1,5 +1,6 @@
+ /* Linux chdir routine */
+  
++#include <unistd.h>
+ #include "fpreproc/f77name.h"
+  
+ /* function names link differently depending on OS */
+diff -Naur pspline_/portlib/Make2 pspline_compiles_on_Arch/portlib/Make2
+--- pspline_/portlib/Make2	2019-11-04 16:31:39.000000000 +0100
++++ pspline_compiles_on_Arch/portlib/Make2	2022-09-20 13:54:09.085031956 +0200
+@@ -184,7 +184,7 @@
+ all:  libs exec
+ 	@echo done  
+ 
+-exec: chkdir2 $(PTEST) $(PTEST2) $(PLIST)
++exec: libs chkdir2 $(PTEST) $(PTEST2) $(PLIST)
+ 
+ chkdir2:
+ 	@test -d $(OBJ)/test || mkdir -p $(OBJ)/test
+diff -Naur pspline_/portlib/portlib_parcopy.c pspline_compiles_on_Arch/portlib/portlib_parcopy.c
+--- pspline_/portlib/portlib_parcopy.c	2019-11-04 16:31:47.000000000 +0100
++++ pspline_compiles_on_Arch/portlib/portlib_parcopy.c	2022-09-20 13:39:50.320911590 +0200
+@@ -6,6 +6,7 @@
+ #include <sys/types.h> 
+ #include <sys/stat.h> 
+ #include <fcntl.h> 
++#include <unistd.h>
+ #include "fpreproc/f77name.h"
+ 
+ #define BUFSIZE    256*1024 
+diff -Naur pspline_/pspline/Makefile pspline_compiles_on_Arch/pspline/Makefile
+--- pspline_/pspline/Makefile	2019-11-04 16:31:47.000000000 +0100
++++ pspline_compiles_on_Arch/pspline/Makefile	2022-09-20 14:03:55.641566835 +0200
+@@ -80,7 +80,8 @@
+  
+ Mnams = ezspline.mod ezspline_obj.mod ezspline_type.mod pspline_calls.mod \
+ 	czspline_pointer_types.mod
+-Mobjs = ezspline_mod.o pspline_calls.o czspline_pointer_types.o
++#Mobjs = ezspline_mod.o pspline_calls.o czspline_pointer_types.o
++Mobjs = ezspline_mod.o czspline_pointer_types.o
+ MODS = $(foreach file,$(Mobjs),$(ARC)($(file)))
+ 
+ ifeq ($(MODUP),Y)
+@@ -121,7 +122,7 @@
+    SLDLIBS = $(OBJ)/lib/portlib.a $(OBJ)/lib/ezcdf.a
+ endif
+ 
+-.PHONY: clean realclean checkdir all
++.PHONY: clean realclean checkdir all FORCE
+ 
+ libs: FORCE $(ARC)
+  
+diff -Naur pspline_/share/Make.flags pspline_compiles_on_Arch/share/Make.flags
+--- pspline_/share/Make.flags	2019-11-04 16:31:39.000000000 +0100
++++ pspline_compiles_on_Arch/share/Make.flags	2022-09-20 14:09:09.811287056 +0200
+@@ -334,10 +334,10 @@
+     endif
+     ifdef _64
+       Bit=64
+-      FFLAGS = -c -O -m64 -ffpe-trap=invalid,zero,overflow -fno-range-check -fdollar-ok -cpp
+-      DFFLAGS = -c -g -m64 -ffpe-trap=invalid,zero,overflow -fno-range-check -fdollar-ok -cpp
+-      CFLAGS = -c -O -m64
+-      CXXFLAGS =  -c -O -m64
++      FFLAGS = -c -O -m64 -ffpe-trap=invalid,zero,overflow -fno-range-check -fdollar-ok -cpp -fallow-argument-mismatch -fPIC
++      DFFLAGS = -c -g -m64 -ffpe-trap=invalid,zero,overflow -fno-range-check -fdollar-ok -cpp -fallow-argument-mismatch -fPIC
++      CFLAGS = -c -O -m64 -fPIC
++      CXXFLAGS =  -c -O -m64 -fPIC
+     else
+       FFLAGS = -c -O -ffpe-trap=invalid,zero,overflow -fno-range-check -fdollar-ok -cpp
+       DFFLAGS = -c -g -ffpe-trap=invalid,zero,overflow -fno-range-check -fdollar-ok -cpp
+@@ -363,13 +363,13 @@
+     MPI_CC  := mpicc
+     MPI_CXX := mpic++
+     MPI_DEFS:= $(DEFS)
+-MPI_FFLAGS:=$(FFLAGS)
+-MPI_DFFLAGS:=$(DFFLAGS)
+-MPI_CFLAGS:=$(CFLAGS)
+-MPI_DCFLAGS  := $(DCFLAGS)
+-MPI_CXXFLAGS := $(CXXFLAGS)
+-MPI_CDEFS    := $(CDEFS)
+-MPI_LDFLAGS  := $(LDFLAGS)
++    MPI_FFLAGS:=$(FFLAGS)
++    MPI_DFFLAGS:=$(DFFLAGS)
++    MPI_CFLAGS:=$(CFLAGS)
++    MPI_DCFLAGS  := $(DCFLAGS)
++    MPI_CXXFLAGS := $(CXXFLAGS)
++    MPI_CDEFS    := $(CDEFS)
++    MPI_LDFLAGS  := $(LDFLAGS)
+     CLIBS = -lc -lstdc++
+     ifndef F_MAIN
+        ifdef GCC4_HOME
