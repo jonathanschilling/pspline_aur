@@ -2,7 +2,7 @@
 pkgname=pspline
 pkgver=1.0.0
 pkgrel=1
-pkgdesc="Princeton University NTCC spline library"
+pkgdesc="Princeton Spline and Hermite Cubic Interpolation Routines"
 arch=("x86_64")
 url="https://w3.pppl.gov/ntcc/PSPLINE/"
 license=('custom')
